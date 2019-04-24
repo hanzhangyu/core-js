@@ -1,3 +1,7 @@
+/**
+ * @file taskQueue 或者称作 Macrotask Queue
+ * @type {Window|*|Window|WorkerGlobalScope}
+ */
 var global = require('../internals/global');
 var classof = require('../internals/classof-raw');
 var bind = require('../internals/bind-context');
@@ -11,10 +15,12 @@ var Dispatch = global.Dispatch;
 var counter = 0;
 var queue = {};
 var ONREADYSTATECHANGE = 'onreadystatechange';
-var defer, channel, port;
 
+var defer/* 延时函数 */, channel, port;
+
+// Dictionary<number, function>
 var run = function () {
-  var id = +this;
+  var id = +this; // 调用valueOf
   // eslint-disable-next-line no-prototype-builtins
   if (queue.hasOwnProperty(id)) {
     var fn = queue[id];
@@ -23,10 +29,14 @@ var run = function () {
   }
 };
 
+// 通过Event来实现
 var listener = function (event) {
-  run.call(event.data);
+  run.call(event.data); // 注意: call会进行object wrapper操作
 };
 
+// OMG，IE竟然还真的支持setImmediate
+// 注意： 这里主要用了一个特性postMessage始终会比setTimeout快，类似的实现https://github.com/YuzuJS/setImmediate
+// https://stackoverflow.com/questions/18826570/settimeout0-vs-window-postmessage-vs-messageport-postmessage
 // Node.js 0.9+ & IE10+ has setImmediate, otherwise:
 if (!set || !clear) {
   set = function setImmediate(fn) {
@@ -40,6 +50,7 @@ if (!set || !clear) {
     defer(counter);
     return counter;
   };
+  // 从dict删除
   clear = function clearImmediate(id) {
     delete queue[id];
   };
@@ -54,7 +65,7 @@ if (!set || !clear) {
       Dispatch.now(bind(run, id, 1));
     };
   // Browsers with MessageChannel, includes WebWorkers
-  } else if (MessageChannel) {
+  } else if (MessageChannel) { // 创建一个包含连个MessagePort的消息通道https://github.com/hanzhangyu/dom-examples/tree/master/channel-messaging-multimessage，这个API是为了拆分页面的postMessage？
     channel = new MessageChannel();
     port = channel.port2;
     channel.port1.onmessage = listener;
