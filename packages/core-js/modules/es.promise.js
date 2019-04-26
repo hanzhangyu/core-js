@@ -60,6 +60,7 @@ var FORCED = isForced(PROMISE, function () {
     && v8.indexOf('6.6') !== 0
     && userAgent.indexOf('Chrome/66') === -1);
 });
+FORCED = true;
 
 var INCORRECT_ITERATION = FORCED || !checkCorrectnessOfIteration(function (iterable) {
   PromiseConstructor.all(iterable)['catch'](function () { /* empty */ });
@@ -209,9 +210,9 @@ var internalResolve = function (promise, state, value, unwrap) {
 if (FORCED) {
   // 25.4.3.1 Promise(executor)
   PromiseConstructor = function Promise(executor) {
-    anInstance(this, PromiseConstructor, PROMISE);
-    aFunction(executor);
-    Internal.call(this);
+    anInstance(this, PromiseConstructor, PROMISE); // 保证是通过new创建的
+    aFunction(executor); // promise构造函数只接受函数
+    Internal.call(this); // 绑定内部的Promise，防止PromiseConstructor的prototype被恶意修改
     var state = getInternalState(this);
     try {
       executor(bind(internalResolve, this, state), bind(internalReject, this, state));
@@ -344,3 +345,5 @@ $export({ target: PROMISE, stat: true, forced: INCORRECT_ITERATION }, {
     return capability.promise;
   }
 });
+
+new Promise(function() {});
