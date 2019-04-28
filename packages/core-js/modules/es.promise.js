@@ -238,7 +238,7 @@ if (FORCED) {
     // https://tc39.github.io/ecma262/#sec-promise.prototype.then
     then: function then(onFulfilled, onRejected) {
       var state = getInternalPromiseState(this);
-      var reaction = newPromiseCapability(speciesConstructor(this, PromiseConstructor));
+      var reaction = newPromiseCapability(speciesConstructor(this, PromiseConstructor)); // 在then中生成新的promise返回给链式调用
       reaction.ok = typeof onFulfilled == 'function' ? onFulfilled : true;
       reaction.fail = typeof onRejected == 'function' && onRejected;
       reaction.domain = IS_NODE ? process.domain : undefined;
