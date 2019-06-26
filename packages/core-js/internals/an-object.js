@@ -1,3 +1,7 @@
+/**
+ * 确认是个对象
+ * @type {(function(*=): *)|*}
+ */
 var isObject = require('../internals/is-object');
 
 module.exports = function (it) {

@@ -60,7 +60,7 @@ var FORCED = isForced(PROMISE, function () {
     && v8.indexOf('6.6') !== 0
     && userAgent.indexOf('Chrome/66') === -1);
 });
-FORCED = true;
+FORCED = true; // 替换原生promise
 
 var INCORRECT_ITERATION = FORCED || !checkCorrectnessOfIteration(function (iterable) {
   PromiseConstructor.all(iterable)['catch'](function () { /* empty */ });
@@ -169,7 +169,7 @@ var bind = function (fn, promise, state, unwrap) {
 };
 
 var internalReject = function (promise, state, value, unwrap) {
-  if (state.done) return;
+  if (state.done) return; // 如果 promise 已结束，忽略报错
   state.done = true;
   if (unwrap) state = unwrap;
   state.value = value;
@@ -184,7 +184,7 @@ var internalResolve = function (promise, state, value, unwrap) {
   try {
     if (promise === value) throw TypeError("Promise can't be resolved itself");
     var then = isThenable(value);
-    if (then) {
+    if (then) { // 如果返回了一个promise，递归执行该promise
       microtask(function () {
         var wrapper = { done: false };
         try {
@@ -196,7 +196,7 @@ var internalResolve = function (promise, state, value, unwrap) {
           internalReject(promise, wrapper, error, state);
         }
       });
-    } else {
+    } else { // 否则调用microtask，尽快执行
       state.value = value;
       state.state = FULFILLED;
       notify(promise, state, false);
@@ -215,14 +215,14 @@ if (FORCED) {
     Internal.call(this); // 绑定内部的Promise，防止PromiseConstructor的prototype被恶意修改
     var state = getInternalState(this);
     try {
-      executor(bind(internalResolve, this, state), bind(internalReject, this, state));
+      executor(bind(internalResolve, this, state), bind(internalReject, this, state)); // 立即执行
     } catch (error) {
-      internalReject(this, state, error);
+      internalReject(this, state, error); // 将错误抛出给catch
     }
   };
   // eslint-disable-next-line no-unused-vars
   Internal = function Promise(executor) {
-    setInternalState(this, {
+    setInternalState(this, { // 设置 state 与 WeekMap 的绑定关系，WeeKMap.set(this, state)
       type: PROMISE,
       done: false,
       notified: false,
@@ -238,7 +238,7 @@ if (FORCED) {
     // https://tc39.github.io/ecma262/#sec-promise.prototype.then
     then: function then(onFulfilled, onRejected) {
       var state = getInternalPromiseState(this);
-      var reaction = newPromiseCapability(speciesConstructor(this, PromiseConstructor));
+      var reaction = newPromiseCapability(speciesConstructor(this, PromiseConstructor)); // 在then中生成新的promise返回给链式调用
       reaction.ok = typeof onFulfilled == 'function' ? onFulfilled : true;
       reaction.fail = typeof onRejected == 'function' && onRejected;
       reaction.domain = IS_NODE ? process.domain : undefined;
@@ -346,4 +346,7 @@ $export({ target: PROMISE, stat: true, forced: INCORRECT_ITERATION }, {
   }
 });
 
-new Promise(function() {});
+new Promise(function(resolve) {
+    resolve(Promise.resolve(12));
+    throw new Error(123);
+}).then(console.log).catch(err => console.log(err));

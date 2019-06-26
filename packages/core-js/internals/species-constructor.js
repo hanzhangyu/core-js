@@ -1,3 +1,7 @@
+/**
+ * @file
+ * @type {(function(*=): *)|*}
+ */
 var anObject = require('../internals/an-object');
 var aFunction = require('../internals/a-function');
 var SPECIES = require('../internals/well-known-symbol')('species');
